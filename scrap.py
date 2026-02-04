@@ -1,58 +1,30 @@
-print("Welcome to Number Guessing Game")
-print("I am thinking of a number between 1 and 100.")
+import requests
+from bs4 import BeautifulSoup
+import csv
 
-import random
-number=random.randint(1,100)
-a = input("Choose a difficulty level: 'easy' or 'hard': ")
+URL = "http://books.toscrape.com/"
+response = requests.get(URL)
+soup = BeautifulSoup(response.content, 'html.parser')
 
-attempts=0
+products_data = []
 
-def easy():
-    attempts=10
-    while attempts > 0:
-        guess = int(input("Make a guess:"))
-        if guess < number:
-            print('Too low.Try again.')
+# Each book is inside an article tag with class 'product_pod'
+product_containers = soup.find_all('article', class_='product_pod')
 
-        elif guess == number:
-            print("You found out the number which is",number)
-            
-            break 
+for container in product_containers:
+    name = container.h3.a['title']
+    price = container.find('p', class_='price_color').text.strip()
+    rating = container.p['class'][1]  # rating is stored as a class name like 'Three'
 
-        else:
-            print('Too high.Try again')
-        
-        
-        attempts -=1
-        if attempts == 0:
-            print('You ran out of the attempts')
+    products_data.append({'Name': name, 'Price': price, 'Rating': rating})
 
-easy()
+# Save to CSV
+csv_file = r"C:\Users\soham\Downloads\ecommerce_products.csv"
+headers = ['Name', 'Price', 'Rating']
 
-def hard():
-    
-    attempts=5
-    while attempts > 0:
-        guess = int(input("Make a guess:"))
-        if guess < number:
-            print('Too low.Try again.')
+with open(csv_file, mode='w', newline='', encoding='utf-8') as file:
+    writer = csv.DictWriter(file, fieldnames=headers)
+    writer.writeheader()
+    writer.writerows(products_data)
 
-        elif guess == number:
-            print("You found out the number which is",number)
-            
-            break 
-
-        else:
-            print('Too high.Try again')
-        
-        
-        attempts -=1
-        if attempts == 0:
-            print('You ran out of the attempts')
-
-if a == 'easy':
-    easy()
-elif a == 'hard':
-    hard()
-else:
-    print("Invalid choice")
+print(f"Successfully scraped {len(products_data)} books and saved to {csv_file}")
